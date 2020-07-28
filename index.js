@@ -96,40 +96,80 @@ function extractFilling(topic, topicTemplate) {
   return filling;
 }
 
-// TODO: refactor, left comments
+// test a set of topic templates
+// "templates" arg should be an iterable object that returns array [id<Any>, template<String>] 
+// testTemplates yield this array if template is correct
+// --------
+// examples:
+// 1. input: ('test/apple', (['test/{fruit}', 'test/{fruit}/extra']).entries())
+//    output: [0, 'test/{fruit}']
+// 2. input: ('test/apple', Object.entries({ simpleTopic: 'test/{fruit}', fancyTopic: 'test/{fruit}/extra' }))
+//    output: ['simpleTopic', 'test/{fruit}']
 function* testTemplates(topic, templates) {
-  // test a set of topic templates
-  // "templates" arg should be an iterable object that returns array [any value, template] 
-  // testTemplates yield this array if template is correct
+  for (const [id, template] of templates) {
+    if (testTopicTemplate(topic, template) === true) {
+      yield [id, template];
+    }
+  }
+}
+
+// same as above as "templates" could be nested, i.e. could contain
+// objects and arrays with templates, like
+// [
+//  [0, "simple/{template}"], 
+//  [1, [
+//      "nested/array/{template}",
+//      "second_nested/{template}",
+//    ]
+//  ],
+//  [2, {
+//      "key": "nested/object/{template}",
+//    }
+//  ]
+// ]
+//    
+// yielded array first element(id) will be an array itself and contain a path
+// to template, example results:
+// [[0], "simple/{template}"]
+// [[1, 0], "nested/array/{template}"]
+// [[2, "key"], "nested/object/{template}"]
+function* testNestedTemplates(topic, templates) {
   for (const [id, template] of templates) {
     let templatePath = id;
+    if (templatePath instanceof Array === false || templatePath._templatePath !== true) {
+      templatePath = [id];
+      Object.defineProperty(templatePath, '_templatePath', {
+        value: true,
+        enumerable: false,
+      });
+    }
 
-    // if (template[Symbol.iterator] !== void 0 && typeof template !== 'string') {
-    //   const nestedTemplates = Array.from(templates.entries())
-    //     .map((v) => {
-    //       if (templatePath instanceof Array && templatePath._templatePath === true) {
-    //         return [[...templatePath, v[0]], v[1]];
-    //       }
-    //       else {
-    //         const nestedTemplatePath = [templatePath, v[0]];
-    //         Object.defineProperty(nestedTemplatePath, '_templatePath', {
-    //           value: true,
-    //           enumerable: false,
-    //         });
-    //         
-    //         return [nestedTemplatePath, v[1]];
-    //       }
-    //     });
-    //
-    //   console.log('nested', nestedTemplates);
-    //
-    //   yield* testTemplates(topic, nestedTemplates);
-    // }
-    // else {
-      if (testTopicTemplate(topic, template) === true) {
-        yield [id, template];
+    if (typeof template === 'object') {
+      let nestedTemplates;
+
+      if (nestedTemplates instanceof Array === true) {
+        nestedTemplates = Array.from(template.entries());
       }
-    // }
+      else {
+        nestedTemplates = Object.entries(template);
+      }
+
+      nestedTemplates = nestedTemplates.map((v) => {
+        const path = [...templatePath, v[0]];
+        Object.defineProperty(path, '_templatePath', {
+          value: true,
+          enumerable: false,
+        });
+        return [path, v[1]];
+      });
+
+      yield* testNestedTemplates(topic, nestedTemplates);
+    }
+    else {
+      if (testTopicTemplate(topic, template) === true) {
+        yield [templatePath, template];
+      }
+    }
   }
 }
 
@@ -138,4 +178,5 @@ module.exports = {
   fillTemplate,
   extractFilling,
   testTemplates,
+  testNestedTemplates,
 };
