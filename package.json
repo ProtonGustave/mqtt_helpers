@@ -1,6 +1,6 @@
 {
   "name": "mqtt-helpers",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "index.js",
   "license": "MIT",
   "homepage": "https://github.com/ProtonGustave/mqtt_helpers",
