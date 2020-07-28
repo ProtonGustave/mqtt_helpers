@@ -173,10 +173,26 @@ function* testNestedTemplates(topic, templates) {
   }
 }
 
+function getTopicOnce(client, subTopic, cb) {
+  const onMessage = (topic, msg, packet) => {
+    if (testTopicTemplate(topic, subTopic) === false) {
+      return;
+    }
+
+    client.unsubscribe(subTopic);
+    client.off('message', onMessage);
+    cb(topic, msg, packet);
+  };
+
+  client.on('message', onMessage);
+  client.subscribe(subTopic);
+}
+
 module.exports = {
   testTopicTemplate,
   fillTemplate,
   extractFilling,
   testTemplates,
   testNestedTemplates,
+  getTopicOnce,
 };
