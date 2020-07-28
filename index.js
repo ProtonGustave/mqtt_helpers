@@ -96,8 +96,20 @@ function extractFilling(topic, topicTemplate) {
   return filling;
 }
 
+function* testTemplates(topic, templates) {
+  // test a set of topic templates
+  // "templates" arg should be an iterable object that returns array [any value, template] 
+  // testTemplates yield this array if template is correct
+  for (const [id, template] of templates) {
+    if (mqttHelpers.testTopicTemplate(topic, template) === true) {
+      yield [id, template];
+    }
+  }
+}
+
 module.exports = {
   testTopicTemplate,
   fillTemplate,
   extractFilling,
+  testTemplates,
 };
