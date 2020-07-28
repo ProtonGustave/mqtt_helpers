@@ -96,14 +96,40 @@ function extractFilling(topic, topicTemplate) {
   return filling;
 }
 
+// TODO: refactor, left comments
 function* testTemplates(topic, templates) {
   // test a set of topic templates
   // "templates" arg should be an iterable object that returns array [any value, template] 
   // testTemplates yield this array if template is correct
   for (const [id, template] of templates) {
-    if (mqttHelpers.testTopicTemplate(topic, template) === true) {
-      yield [id, template];
-    }
+    let templatePath = id;
+
+    // if (template[Symbol.iterator] !== void 0 && typeof template !== 'string') {
+    //   const nestedTemplates = Array.from(templates.entries())
+    //     .map((v) => {
+    //       if (templatePath instanceof Array && templatePath._templatePath === true) {
+    //         return [[...templatePath, v[0]], v[1]];
+    //       }
+    //       else {
+    //         const nestedTemplatePath = [templatePath, v[0]];
+    //         Object.defineProperty(nestedTemplatePath, '_templatePath', {
+    //           value: true,
+    //           enumerable: false,
+    //         });
+    //         
+    //         return [nestedTemplatePath, v[1]];
+    //       }
+    //     });
+    //
+    //   console.log('nested', nestedTemplates);
+    //
+    //   yield* testTemplates(topic, nestedTemplates);
+    // }
+    // else {
+      if (testTopicTemplate(topic, template) === true) {
+        yield [id, template];
+      }
+    // }
   }
 }
 
