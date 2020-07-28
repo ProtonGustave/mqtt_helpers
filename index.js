@@ -2,7 +2,7 @@ function testTopicTemplate(topic, topicTemplate) {
   // Test if topic template suits topic
   // e.g.
   // template:
-  // test/{name}/topic
+  // test/{name}/topic (or test/+/topic, or test/#)
   // topic:
   // test/super/topic
 
@@ -10,34 +10,45 @@ function testTopicTemplate(topic, topicTemplate) {
   const topicSections = topic.split('/');
   const topicTemplateSections = topicTemplate.split('/');
 
-  if (topicSections.length !== topicTemplateSections.length) {
+  if (topicSections.length < topicTemplateSections.length) {
     return false;
   }
 
-  // ids of template sections(like {exchange})
   const templateSections = [];
 
   topicTemplateSections.forEach((section, id) => {
-    if (section.startsWith('{') && section.endsWith('}')) {
+    // collect ids of template sections(like {exchange} and +)
+    if (
+      (section.startsWith('{') && section.endsWith('}'))
+      || section === '+'
+    ) {
       templateSections.push(id);
     }
   });
 
-  const isTopicWrong = topicSections.some((section, id) => {
-    // compare sections
-    if (templateSections.indexOf(id) !== -1) {
-      // template section, skip it
-      return false;
-    }
+  for (const [id, section] of topicSections.entries()) {
+    const templateSection = topicTemplateSections[id];
 
-    if (section !== topicTemplateSections[id]) {
+    if (templateSection === '#') {
+      if (id !== (topicTemplateSections.length - 1)) {
+        throw new Error('# could only be last wildcard');
+      }
+
       return true;
     }
 
-    return false;
-  });
+    // compare sections
+    if (templateSections.indexOf(id) !== -1) {
+      // template section, skip it
+      continue;
+    }
 
-  return !isTopicWrong;
+    if (section !== templateSection) {
+      return false;
+    }
+  }
+
+  return true;
 };
 
 function fillTemplate(template, filling) {
@@ -68,11 +79,19 @@ function extractFilling(topic, topicTemplate) {
       const sectionName = section.slice(1, -1);
       filling[sectionName] = topicSections[id];
     }
-  });
 
-  if (Object.keys(filling).length === 0) {
-    return false;
-  }
+    if (section === '+') {
+      if (filling.plus === void 0) {
+        filling.plus = [];
+      }
+
+      filling.plus.push(topicSections[id]);
+    }
+
+    if (section === '#') {
+      filling.sharp = topicSections.slice(id); 
+    }
+  });
 
   return filling;
 }
