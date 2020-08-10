@@ -188,6 +188,11 @@ function getTopicOnce(client, subTopic, cb) {
   client.subscribe(subTopic);
 }
 
+function replaceTopicSections(template, replaceWith) {
+  // replace all topic sections with some value
+  return template.replace(/{.*?}/g, replaceWith);
+}
+
 module.exports = {
   testTopicTemplate,
   fillTemplate,
@@ -195,4 +200,5 @@ module.exports = {
   testTemplates,
   testNestedTemplates,
   getTopicOnce,
+  replaceTopicSections,
 };
